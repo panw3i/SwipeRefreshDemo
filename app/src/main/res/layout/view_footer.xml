@@ -5,13 +5,12 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="50dp">
-
+        android:layout_height="48dp">
 
         <ProgressBar
             android:id="@+id/load_progress"
-            android:layout_width="25dp"
-            android:layout_height="25dp"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:layout_centerVertical="true"
             android:layout_marginLeft="30dp"/>
 
@@ -20,7 +19,7 @@
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:text="正在努力加载中..."
-            android:textColor="@android:color/holo_red_dark"
+            android:textColor="@android:color/black"
             android:textSize="16sp"/>
 
     </RelativeLayout>

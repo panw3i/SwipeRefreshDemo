@@ -2,6 +2,7 @@ package com.pinger.swiperefreshdemo.view;
 
 import android.content.Context;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -12,7 +13,7 @@ import android.widget.ListView;
 import com.pinger.swiperefreshdemo.R;
 
 /**
- * 自定义View继承SwipeRefreshLayout，添加上拉加载更多的布局属性
+ * 自定义View继承SwipeRefreshLayout，添加上拉加载更多的布局属性,添加对RecyclerView的支持
  * Created by Pinger on 2016/9/26.
  */
 
@@ -27,6 +28,7 @@ public class SwipeRefreshView extends SwipeRefreshLayout {
      * 正在加载状态
      */
     private boolean isLoading;
+    private RecyclerView mRecyclerView;
 
     public SwipeRefreshView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -35,14 +37,13 @@ public class SwipeRefreshView extends SwipeRefreshLayout {
 
         // 表示控件移动的最小距离，手移动的距离大于这个距离才能拖动控件
         mScaledTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
-        System.out.println("====" + mScaledTouchSlop);
     }
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
         // 获取ListView,设置ListView的布局位置
-        if (mListView == null) {
+        if (mListView == null || mRecyclerView == null) {
             // 判断容器有多少个孩子
             if (getChildCount() > 0) {
                 // 判断第一个孩子是不是ListView
@@ -52,10 +53,17 @@ public class SwipeRefreshView extends SwipeRefreshLayout {
 
                     // 设置ListView的滑动监听
                     setListViewOnScroll();
+                }else if(getChildAt(0) instanceof RecyclerView){
+                    // 创建ListView对象
+                    mRecyclerView = (RecyclerView) getChildAt(0);
+
+                    // 设置RecyclerView的滑动监听
+                    setRecyclerViewOnScroll();
                 }
             }
         }
     }
+
 
     /**
      * 在分发事件的时候处理子控件的触摸事件
@@ -64,7 +72,6 @@ public class SwipeRefreshView extends SwipeRefreshLayout {
      * @return
      */
     private float mDownY, mUpY;
-
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
 
@@ -171,6 +178,29 @@ public class SwipeRefreshView extends SwipeRefreshLayout {
             @Override
             public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
 
+            }
+        });
+    }
+
+
+    /**
+     * 设置RecyclerView的滑动监听
+     */
+    private void setRecyclerViewOnScroll() {
+        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+                // 移动过程中判断时候能下拉加载更多
+                if (canLoadMore()) {
+                    // 加载数据
+                    loadData();
+                }
+            }
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
             }
         });
     }

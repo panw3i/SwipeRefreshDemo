@@ -33,6 +33,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         final SwipeRefreshView swipeRefreshView = (SwipeRefreshView) findViewById(R.id.srl);
+
+
         ListView listView = (ListView) findViewById(R.id.lv);
 
         // 设置适配器数据
@@ -52,7 +54,9 @@ public class MainActivity extends AppCompatActivity {
         // 设置下拉进度的背景颜色，默认就是白色的
         swipeRefreshView.setProgressBackgroundColorSchemeResource(android.R.color.white);
         // 设置下拉进度的主题颜色
-        swipeRefreshView.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimary, R.color.colorPrimaryDark);
+        swipeRefreshView.setColorSchemeResources(R.color.colorAccent,
+                android.R.color.holo_blue_bright, R.color.colorPrimaryDark,
+                android.R.color.holo_orange_dark, android.R.color.holo_red_dark, android.R.color.holo_purple);
 
         // 下拉时触发SwipeRefreshLayout的下拉动画，动画完毕之后就会回调这个方法
         swipeRefreshView.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -77,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
                         // 加载完数据设置为不刷新状态，将下拉进度收起来
                         swipeRefreshView.setRefreshing(false);
                     }
-                }, 1200);
+                }, 200000);
 
                 // System.out.println(Thread.currentThread().getName());
 
