@@ -16,7 +16,6 @@ import com.pinger.swiperefreshdemo.view.SwipeRefreshView;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 
 /**
@@ -24,25 +23,18 @@ import java.util.Random;
  */
 public class MainActivity extends AppCompatActivity {
     private List<String> mList;
-    private int mCount;
     private StringAdapter mAdapter;
+    private SwipeRefreshView mSwipeRefreshView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        final SwipeRefreshView swipeRefreshView = (SwipeRefreshView) findViewById(R.id.srl);
-
-
+        mSwipeRefreshView = (SwipeRefreshView) findViewById(R.id.srl);
         ListView listView = (ListView) findViewById(R.id.lv);
 
-        // 设置适配器数据
         mList = new ArrayList<>();
-        for (int i = 0; i < 30; i++) {
-            mList.add("我是天才" + i + "号");
-            mCount++;
-        }
         mAdapter = new StringAdapter();
         listView.setAdapter(mAdapter);
 
@@ -52,70 +44,74 @@ public class MainActivity extends AppCompatActivity {
 
         // 设置颜色属性的时候一定要注意是引用了资源文件还是直接设置16进制的颜色，因为都是int值容易搞混
         // 设置下拉进度的背景颜色，默认就是白色的
-        swipeRefreshView.setProgressBackgroundColorSchemeResource(android.R.color.white);
+        mSwipeRefreshView.setProgressBackgroundColorSchemeResource(android.R.color.white);
         // 设置下拉进度的主题颜色
-        swipeRefreshView.setColorSchemeResources(R.color.colorAccent,
+        mSwipeRefreshView.setColorSchemeResources(R.color.colorAccent,
                 android.R.color.holo_blue_bright, R.color.colorPrimaryDark,
                 android.R.color.holo_orange_dark, android.R.color.holo_red_dark, android.R.color.holo_purple);
 
+        mSwipeRefreshView.setItemCount(20);
+
+        // 手动调用,通知系统去测量
+        mSwipeRefreshView.measure(0, 0);
+        mSwipeRefreshView.setRefreshing(true);
+
+        initEvent();
+        initData();
+    }
+
+    private void initEvent() {
+
         // 下拉时触发SwipeRefreshLayout的下拉动画，动画完毕之后就会回调这个方法
-        swipeRefreshView.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+        mSwipeRefreshView.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-
-                // 开始刷新，设置当前为刷新状态
-                //swipeRefreshLayout.setRefreshing(true);
-
-                // 这里是主线程
-                // 一些比较耗时的操作，比如联网获取数据，需要放到子线程去执行
-                // TODO 获取数据
-                final Random random = new Random();
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        mList.add(0, "我是天才" + random.nextInt(100) + "号");
-                        mAdapter.notifyDataSetChanged();
-
-                        Toast.makeText(MainActivity.this, "刷新了一条数据", Toast.LENGTH_SHORT).show();
-
-                        // 加载完数据设置为不刷新状态，将下拉进度收起来
-                        swipeRefreshView.setRefreshing(false);
-                    }
-                }, 200000);
-
-                // System.out.println(Thread.currentThread().getName());
-
-                // 这个不能写在外边，不然会直接收起来
-                //swipeRefreshLayout.setRefreshing(false);
+                initData();
             }
         });
 
 
         // 设置下拉加载更多
-        swipeRefreshView.setOnLoadListener(new SwipeRefreshView.OnLoadListener() {
+        mSwipeRefreshView.setOnLoadMoreListener(new SwipeRefreshView.OnLoadMoreListener() {
             @Override
-            public void onLoad() {
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-
-                        // 添加数据
-                        for (int i = 30; i < 35; i++) {
-                            mList.add("我是天才" + i+ "号");
-                            // 这里要放在里面刷新，放在外面会导致刷新的进度条卡住
-                            mAdapter.notifyDataSetChanged();
-                        }
-
-                        Toast.makeText(MainActivity.this, "加载了" + 5 + "条数据", Toast.LENGTH_SHORT).show();
-
-                        // 加载完数据设置为不加载状态，将加载进度收起来
-                        swipeRefreshView.setLoading(false);
-                    }
-                }, 1200);
+            public void onLoadMore() {
+                loadMoreData();
             }
         });
+    }
+
+    private void loadMoreData() {
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+
+                mList.clear();
+                mList.addAll(DataResource.getMoreData());
+                Toast.makeText(MainActivity.this, "加载了" + 20 + "条数据", Toast.LENGTH_SHORT).show();
+
+                // 加载完数据设置为不加载状态，将加载进度收起来
+                mSwipeRefreshView.setLoading(false);
+            }
+        }, 2000);
+    }
 
 
+    private void initData() {
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mList.clear();
+                mList.addAll(DataResource.getData());
+                mAdapter.notifyDataSetChanged();
+
+                Toast.makeText(MainActivity.this, "刷新了20条数据", Toast.LENGTH_SHORT).show();
+
+                // 加载完数据设置为不刷新状态，将下拉进度收起来
+                if (mSwipeRefreshView.isRefreshing()) {
+                    mSwipeRefreshView.setRefreshing(false);
+                }
+            }
+        }, 2000);
     }
 
 
@@ -151,6 +147,31 @@ public class MainActivity extends AppCompatActivity {
             tv.setText(mList.get(position));
 
             return convertView;
+        }
+    }
+
+
+    public static class DataResource {
+        private static List<String> datas = new ArrayList<>();
+        private static int page = 0;
+
+        public static List<String> getData() {
+            page = 0;
+            datas.clear();
+            for (int i = 0; i < 15; i++) {
+                datas.add("我是天才" + i + "号");
+            }
+
+            return datas;
+        }
+
+        public static List<String> getMoreData() {
+            page = page + 1;
+            for (int i = 20 * page; i < 20 * (page + 1); i++) {
+                datas.add("我是天才" + i + "号");
+            }
+
+            return datas;
         }
     }
 }

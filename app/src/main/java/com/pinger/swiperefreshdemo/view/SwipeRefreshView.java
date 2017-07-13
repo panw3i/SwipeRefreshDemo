@@ -4,6 +4,7 @@ import android.content.Context;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -19,16 +20,18 @@ import com.pinger.swiperefreshdemo.R;
 
 public class SwipeRefreshView extends SwipeRefreshLayout {
 
+    private static final String TAG = SwipeRefreshView.class.getSimpleName();
     private final int mScaledTouchSlop;
     private final View mFooterView;
     private ListView mListView;
-    private OnLoadListener mOnLoadListener;
+    private OnLoadMoreListener mListener;
 
     /**
      * 正在加载状态
      */
     private boolean isLoading;
     private RecyclerView mRecyclerView;
+    private int mItemCount;
 
     public SwipeRefreshView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -53,7 +56,7 @@ public class SwipeRefreshView extends SwipeRefreshLayout {
 
                     // 设置ListView的滑动监听
                     setListViewOnScroll();
-                }else if(getChildAt(0) instanceof RecyclerView){
+                } else if (getChildAt(0) instanceof RecyclerView) {
                     // 创建ListView对象
                     mRecyclerView = (RecyclerView) getChildAt(0);
 
@@ -67,11 +70,9 @@ public class SwipeRefreshView extends SwipeRefreshLayout {
 
     /**
      * 在分发事件的时候处理子控件的触摸事件
-     *
-     * @param ev
-     * @return
      */
     private float mDownY, mUpY;
+
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
 
@@ -98,31 +99,45 @@ public class SwipeRefreshView extends SwipeRefreshLayout {
 
     /**
      * 判断是否满足加载更多条件
-     *
-     * @return
      */
     private boolean canLoadMore() {
         // 1. 是上拉状态
         boolean condition1 = (mDownY - mUpY) >= mScaledTouchSlop;
         if (condition1) {
-            System.out.println("是上拉状态");
+            Log.d(TAG, "------->  是上拉状态");
         }
 
-        // 2. 当前页面可见的item是最后一个条目
+        // 2. 当前页面可见的item是最后一个条目,一般最后一个条目位置需要大于第一页的数据长度
         boolean condition2 = false;
         if (mListView != null && mListView.getAdapter() != null) {
-            condition2 = mListView.getLastVisiblePosition() == (mListView.getAdapter().getCount() - 1);
+
+            if (mItemCount > 0) {
+                if (mListView.getAdapter().getCount() < mItemCount) {
+                    // 第一页未满，禁止下拉
+                    condition2 = false;
+                }else {
+                    condition2 = mListView.getLastVisiblePosition() == (mListView.getAdapter().getCount() - 1);
+                }
+            } else {
+                // 未设置数据长度，则默认第一页数据不满时也可以上拉
+                condition2 = mListView.getLastVisiblePosition() == (mListView.getAdapter().getCount() - 1);
+            }
+
         }
 
         if (condition2) {
-            System.out.println("是最后一个条目");
+            Log.d(TAG, "------->  是最后一个条目");
         }
         // 3. 正在加载状态
         boolean condition3 = !isLoading;
         if (condition3) {
-            System.out.println("不是正在加载状态");
+            Log.d(TAG, "------->  不是正在加载状态");
         }
         return condition1 && condition2 && condition3;
+    }
+
+    public void setItemCount(int itemCount) {
+        this.mItemCount = itemCount;
     }
 
     /**
@@ -130,10 +145,10 @@ public class SwipeRefreshView extends SwipeRefreshLayout {
      */
     private void loadData() {
         System.out.println("加载数据...");
-        if (mOnLoadListener != null) {
+        if (mListener != null) {
             // 设置加载状态，让布局显示出来
             setLoading(true);
-            mOnLoadListener.onLoad();
+            mListener.onLoadMore();
         }
 
     }
@@ -210,11 +225,11 @@ public class SwipeRefreshView extends SwipeRefreshLayout {
      * 上拉加载的接口回调
      */
 
-    public interface OnLoadListener {
-        void onLoad();
+    public interface OnLoadMoreListener {
+        void onLoadMore();
     }
 
-    public void setOnLoadListener(OnLoadListener listener) {
-        this.mOnLoadListener = listener;
+    public void setOnLoadMoreListener(OnLoadMoreListener listener) {
+        this.mListener = listener;
     }
 }
